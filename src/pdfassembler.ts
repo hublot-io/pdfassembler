@@ -16,7 +16,7 @@ import * as queue from 'promise-queue';
 export type TypedArray = Int8Array | Uint8Array | Int16Array | Uint16Array |
   Int32Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array;
 
-export type BinaryFile = Blob | File | ArrayBuffer | TypedArray;
+export type BinaryFile = File | ArrayBuffer | TypedArray;
 
 export class PDFAssembler {
   pdfManager: PDFManager = null;
@@ -40,7 +40,7 @@ export class PDFAssembler {
   constructor(inputData?: BinaryFile|Object, userPassword = '') {
     if (userPassword.length) { this.userPassword = userPassword; }
     if (typeof inputData === 'object') {
-      if (inputData instanceof Blob || inputData instanceof ArrayBuffer || inputData instanceof Uint8Array) {
+      if (inputData instanceof ArrayBuffer || inputData instanceof Uint8Array) {
         this.promiseQueue.add(() => this.toArrayBuffer(inputData)
           .then(arrayBuffer => this.pdfManager = new LocalPdfManager(1, arrayBuffer, userPassword, {}, ''))
           .then(() => this.pdfManager.ensureDoc('checkHeader', []))
@@ -126,13 +126,6 @@ export class PDFAssembler {
     return file instanceof ArrayBuffer ? Promise.resolve(file) :
       typedArrays.some(typedArray => file instanceof typedArray) ?
         Promise.resolve(<ArrayBuffer>(<TypedArray>file).buffer) :
-      file instanceof Blob ?
-        new Promise((resolve, reject) => {
-          const fileReader = new FileReader();
-          fileReader.onload = () => resolve(fileReader.result);
-          fileReader.onerror = () => reject(fileReader.error);
-          fileReader.readAsArrayBuffer(<Blob>file);
-        }) :
         Promise.resolve(new ArrayBuffer(0));
   }
 
